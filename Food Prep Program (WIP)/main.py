@@ -8,149 +8,22 @@
 # --------------------------------------------------------------------------------
 import random
 import os
+from datetime import datetime 
+from datetime import timedelta
+from datetime import date
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 # import math
-# import datetime
 
 # --------------------------------------------------------------------------------
 # Constants
 # --------------------------------------------------------------------------------
 astrDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 strMealFile = "meals.txt"
-
-
 # --------------------------------------------------------------------------------
 # Class Level Varables
 # --------------------------------------------------------------------------------
-astrCatagoryData = []
-astrCookTime = []
-astrMealName = []
-
-
-
-# --------------------------------------------------------------------------------
-# Name: ValidateInteger
-# Abstract: Vaildates postive integer inputs
-# --------------------------------------------------------------------------------
-def ValidateInteger(strInputMessage):
-    while True:
-        try:
-            intInput = input(strInputMessage)
-
-            intInput = int(intInput)
-            if intInput > 0:
-                return intInput
-            else:
-                print("INVALID: Please enter a number greater than 0")
-
-        except ValueError:
-            print("INVALID: Please enter a number ")
-
-
-
-# --------------------------------------------------------------------------------
-# Name: LoadMeals
-# Abstract: Load meal data
-# --------------------------------------------------------------------------------
-def LoadMeals():
-    global astrCatagoryData, astrCookTime, astrMealName
-    
-    # Reset Data
-    astrCatagoryData = []
-    astrCookTime = []
-    astrMealName = []
-    # Does the file not exist?
-    if not os.path.exists(strMealFile):
-        # Yes, Generate file
-        clsFile = open(strMealFile, 'a')
-        clsFile.close()
-    
-    clsFile = open(strMealFile, 'r')
-
-    #Loop through text file line by line
-    for strLine in clsFile:
-        # Trim whitespace & find indexes
-        strLine = strLine.strip()
-        intFirstPipeIndex = strLine.find('|')
-        intSecondPipeIndex = strLine.find('|', intFirstPipeIndex + 1)
-
-        # Extract and appended data into arrays
-        astrCatagoryData.append(strLine[:intFirstPipeIndex])
-        astrCookTime.append(strLine[intFirstPipeIndex + 1:intSecondPipeIndex])
-        astrMealName.append(strLine[intSecondPipeIndex + 1:])
-
-    clsFile.close()
-
-
-
-# --------------------------------------------------------------------------------
-# Name: AddMeals
-# Abstract: Add a meal
-# --------------------------------------------------------------------------------
-def AddMeals():
-    while True:
-        print("---New Meal---------\n")
-        strMealName = input("Enter a meal name : ")
-        strCatagory = InputCatagory()
-        intCookTime = ValidateInteger("Enter an average cook time : ")
-        
-        strNewMeal = f"{strCatagory}|{intCookTime}|{strMealName}"
-        SaveMeal(strNewMeal)
-
-        intUserInput = BackToMain("1) Another Meal?")
-        if intUserInput == 2:
-            break 
-
-
-
-# --------------------------------------------------------------------------------
-# Name: InputCatagory
-# Abstract: Add a Catagory (AddMeal Helper function)
-# --------------------------------------------------------------------------------
-def InputCatagory():
-    intUserInput = 0;
-    strCatagory = ""
-    while True:
-        print("1) Rice Dish")
-        print("2) Pasta Dish")
-        print("3) Casserole")
-        print("4) Breakfast")
-        print("5) Soup/Stew")
-        print("6) Oven Dish")
-        print("7) One-pot Dish");
-        intUserInput = ValidateInteger("Please select a catagory: ");
-        if intUserInput == 1:
-            strCatagory = "Rice Dish"
-        elif intUserInput == 2:
-            strCatagory = "Pasta Dish"
-        elif intUserInput == 3:
-            strCatagory = "Casserole"
-        elif intUserInput == 4:
-            strCatagory = "Breakfast"
-        elif intUserInput == 5:
-            strCatagory = "Soup/Stew"
-        elif intUserInput == 6:
-            strCatagory = "Oven Dish"
-        elif intUserInput == 7:
-            strCatagory = "One-pot Dish"
-        else:
-            print("Invalid: Pick a number 1-7")
-
-        if intUserInput < 8:
-            break
-
-    return strCatagory
-
-
-
-# --------------------------------------------------------------------------------
-# Name: SaveMeal
-# Abstract: Save a meal to meal.txt
-# --------------------------------------------------------------------------------
-def SaveMeal(strNewMeal):
-    clsFile = open(strMealFile, 'a')
-    clsFile.write(strNewMeal.strip() + "\n")
-    clsFile.close()
-
+adctMeals = [] 
 
 
 # --------------------------------------------------------------------------------
@@ -175,6 +48,28 @@ def BackToMain(strMessage):
             print("INVALID: Please enter 1 or 2")
     
     return intUserInput
+
+
+
+# --------------------------------------------------------------------------------
+# Name: DeleteMeal
+# Abstract: Delete a meal from meals.txt
+# --------------------------------------------------------------------------------
+def DeleteMeal(intUserInput):
+    intIndex = 1;
+    clsFile = open(strMealFile,"r")
+    strLines = clsFile.readlines()
+    clsFile.close()
+
+    clsFile = open(strMealFile, "w")
+    
+
+    for strLine in strLines:
+        if intIndex != intUserInput:
+            clsFile.write(strLine)
+        intIndex += 1
+    
+    clsFile.close()
 
 
 
@@ -221,24 +116,424 @@ def RemoveMeals():
             break
 
 
+
 # --------------------------------------------------------------------------------
-# Name: DeleteMeal
-# Abstract: Delete a meal from meals.txt
+# Name: ValidateInteger
+# Abstract: Vaildates postive integer inputs
 # --------------------------------------------------------------------------------
-def DeleteMeal(intUserInput):
-    intIndex = 1;
-    clsFile = open(strMealFile,"r")
-    strLines = clsFile.readlines()
+def ValidateInteger(strInputMessage):
+    while True:
+        try:
+            intInput = input(strInputMessage)
+
+            intInput = int(intInput)
+            if intInput > 0:
+                return intInput
+            else:
+                print("INVALID: Please enter a number greater than 0")
+
+        except ValueError:
+            print("INVALID: Please enter a number ")
+
+
+
+# --------------------------------------------------------------------------------
+# Name: InputCookType 
+# Abstract: Add a Cook Type (AddMeal Helper function)
+# --------------------------------------------------------------------------------
+def InputCookType():
+    intUserInput = 0;
+    strCookType = ""
+    dish_types = {
+    1: "Rice",
+    2: "Pasta",
+    3: "Casserole",
+    4: "Crockpot",
+    5: "Oven",
+    6: "Stovetop"
+    }
+
+    while True:
+        print("1) Rice")
+        print("2) Pasta")
+        print("3) Casserole")
+        print("4) Crockpot")
+        print("5) Oven")
+        print("6) Stovetop");
+        intUserInput = ValidateInteger("Please select a catagory: ");
+
+        if intUserInput > 6:
+            print("INVALID: Please select a valid catagory")
+        else:
+            strCookType = dish_types.get(intUserInput)
+            break
+
+
+    return strCookType
+    
+
+
+# --------------------------------------------------------------------------------
+# Name: InputCatagory
+# Abstract: Add a Cook Type (AddMeal Helper function)
+# --------------------------------------------------------------------------------
+def InputCatagory():
+    intUserInput = 0;
+    strCatagory = ""
+    strCatagoryList = {
+    1: "Italian",
+    2: "Mexican",
+    3: "American",
+    4: "Indian",
+    5: "Thai",
+    6: "Spanish"
+    }
+
+    while True:
+        print("1) Italian")
+        print("2) Mexican")
+        print("3) American")
+        print("4) Indian")
+        print("5) Thai")
+        print("6) Spanish");
+        intUserInput = ValidateInteger("Please select a catagory: ");
+
+        if intUserInput > 6:
+            print("INVALID: Please select a valid catagory")
+        else:
+            strCatagory = strCatagoryList.get(intUserInput)
+            break
+
+
+    return strCatagory
+
+
+
+# --------------------------------------------------------------------------------
+# Name: AddMeals
+# Abstract: Add a meal
+# --------------------------------------------------------------------------------
+def AddMeals():
+    while True:
+        print("---New Meal---------\n")
+        strMealName = input("Enter a meal name : ")
+        strCatagory = InputCatagory()
+        strCookType = InputCookType()
+        intPrepTime = ValidateInteger("Enter an average prep time (in minutes) : ")
+       
+        strNewMeal = f"{strCatagory}|{strCookType}|{intPrepTime}|{strMealName}"
+        SaveMeal(strNewMeal, strMealFile)
+
+        intUserInput = BackToMain("1) Another Meal?")
+        if intUserInput == 2:
+            break 
+
+
+
+# --------------------------------------------------------------------------------
+# Name: MondayFilter
+# Abstract: Return true if the Monday condition is met
+# --------------------------------------------------------------------------------
+def MondayFilter(dctMeal):
+    blnFlag = False
+
+    if dctMeal["cook-type"] == "Crockpot":
+        blnFlag = True
+
+    return blnFlag
+    
+
+
+# --------------------------------------------------------------------------------
+# Name: TuesdayFilter
+# Abstract: Return true if the Tuesday condition is met
+# --------------------------------------------------------------------------------
+# def TuesdayFilter(dctMeal):
+#     blnFlag = False
+
+#     if dctMeal["cook-type"] == "crockpot":
+#         blnFlag == True
+
+#     return blnFlag
+    
+
+
+# --------------------------------------------------------------------------------
+# Name: WednesdayFilter
+# Abstract: Return true if the Wednesday condition is met
+# --------------------------------------------------------------------------------
+def WednesdayFilter(dctMeal):
+    blnFlag = False
+
+    if dctMeal["cook-type"] == "Rice":
+        blnFlag = True
+
+    return blnFlag
+    
+
+
+# --------------------------------------------------------------------------------
+# Name: ThursdayFilter
+# Abstract: Return true if the Thursday condition is met
+# --------------------------------------------------------------------------------
+def ThursdayFilter(dctMeal):
+    blnFlag = False
+
+    if dctMeal["cook-type"] == "Pasta":
+        blnFlag = True
+
+    return blnFlag
+    
+
+
+# --------------------------------------------------------------------------------
+# Name: FridayFilter 
+# Abstract: Return true if the Monday condition is met
+# --------------------------------------------------------------------------------
+# def MondayFilter(dctMeal):
+#     blnFlag = False
+
+#     if dctMeal["cook-type"] == "crockpot":
+#         blnFlag == True
+
+#     return blnFlag
+    
+
+
+# --------------------------------------------------------------------------------
+# Name: SaturdayFilter
+# Abstract: Return true 
+# --------------------------------------------------------------------------------
+def SaturdayFilter(dctMeal):
+    return True
+
+
+    
+# --------------------------------------------------------------------------------
+# Name: SundayFitler 
+# Abstract: Return true if the Monday condition is met
+# --------------------------------------------------------------------------------
+def SundayFilter(dctMeal):
+    return True
+    
+
+
+# --------------------------------------------------------------------------------
+# Name: GetFileName
+# Abstract: Format and return the File Name
+# --------------------------------------------------------------------------------
+def GetFileName():
+    strCurrentDate = datetime.now()
+    strNextWeek = strCurrentDate + timedelta(days=7)
+
+    strFileName = f"Meal Plan {strCurrentDate.strftime('%B')} {strCurrentDate.day} - {strNextWeek.strftime('%B')} {strNextWeek.day}"
+    print (strFileName)
+    return strFileName
+
+
+
+# --------------------------------------------------------------------------------
+# Name: SaveMealPlan
+# Abstract: Save most recent entries to avoid geting the same meals next week.
+# --------------------------------------------------------------------------------
+def SaveMealPlan(adctMealPlan ,strFileName="previous-meal-plan.txt"):
+    if not os.path.exists(strFileName):
+        # Yes, Generate file
+        clsFile = open(strFileName, 'a')
+        clsFile.close()
+
+    clsFile = open(strFileName, 'r')
+    adctMealValues = adctMealPlan.values()
+    for dctMeal in adctMealValues:
+        if isinstance(dctMeal, dict):
+            strMealName = dctMeal.get("name")
+        else:
+            strMealName = str(dctMeal) 
+        
+        SaveMeal(strMealName, strFileName)
+
+    
+
+ # --------------------------------------------------------------------------------
+# Name: GetEligibleMeals
+# Abstract: Generate a list of possiable meals to choose from
+# --------------------------------------------------------------------------------  
+def GetEligibleMeals(FilterFunction, aUsedMeals):
+    astrEligibleMeals = []               
+    for dctMeal in adctMeals:
+        strMealName = dctMeal.get("name", "")
+        if FilterFunction(dctMeal) == True and strMealName not in aUsedMeals:
+            astrEligibleMeals.append(dctMeal)
+    return astrEligibleMeals
+
+
+
+ # --------------------------------------------------------------------------------
+# Name: GetMealForDay
+# Abstract: Generate meal for the current day
+# --------------------------------------------------------------------------------  
+def GetMealForDay(strDay, aUsedMeals):
+    adctDayFilters = {
+        "Monday": MondayFilter,
+        "Wednesday": WednesdayFilter,
+        "Thursday": ThursdayFilter,
+        "Saturday": SaturdayFilter,
+        "Sunday": SundayFilter
+    }
+    if strDay not in adctDayFilters:
+        return f"No Filter Found for {strDay}"
+    
+    CurrentFilter = adctDayFilters[strDay]
+    
+    astrEligibleMeals = GetEligibleMeals(CurrentFilter, aUsedMeals)
+
+    if not astrEligibleMeals:
+        return f"No Meal Found for {strDay}"
+
+    dctChosenMeal = random.choice(astrEligibleMeals)
+    strMealName = dctChosenMeal.get("name", "UnamedMeal")
+    aUsedMeals.add(strMealName)
+
+    return dctChosenMeal
+    
+
+
+# --------------------------------------------------------------------------------
+# Name: LoadPreviousMeals
+# Abstract: Load the most recently used meals to the blocklist
+# --------------------------------------------------------------------------------
+def LoadPreviousMeals(strFileName="previous-meal-plan.txt"):
+    aUsedMeals = set()
+    if os.path.exists(strFileName):
+        clsFile = open(strFileName, "r")
+        for strLine in clsFile:
+            strMealName = strLine.strip()
+            if strMealName:
+                aUsedMeals.add(strMealName)
+        clsFile.close()
+
+        clsFile = open(strFileName, "w")
+        clsFile.close()
+
+
+    return aUsedMeals
+
+
+# --------------------------------------------------------------------------------
+# Name: GetMealsForMealPlan
+# Abstract: Generate a list of meals for the week!
+# --------------------------------------------------------------------------------
+def GetMealsForMealPlan():
+    global adctMeals, astrDays
+    
+    LoadMeals()
+    adctMealPlan = {}
+    aUsedMeals = LoadPreviousMeals()
+    
+    for strDay in astrDays:
+        if strDay == "Tuesday":
+            adctMealPlan[strDay] = "Eat-out Night"        
+        elif strDay == "Friday":
+            adctMealPlan[strDay] = "Grill-Out-Night"
+        else: 
+            adctMealPlan[strDay] = GetMealForDay(strDay, aUsedMeals);
+
+    SaveMealPlan(adctMealPlan)
+    return adctMealPlan
+            
+
+
+# --------------------------------------------------------------------------------
+# Name: GenerateMealPlan
+# Abstract: Generate a meal plan!
+# --------------------------------------------------------------------------------
+def GenerateMealPlan():
+    adctMealList = GetMealsForMealPlan();           
+    strFileName = GetFileName();
+    objCanvas = canvas.Canvas(f"Meal-Plans/{strFileName}.pdf", pagesize=letter)
+    # Get Pdf's width and height,
+    dblMaxWidth, dblMaxHeight = letter 
+    dblNewLine = 25
+    dblMargin =  52.00
+    dblCurrentWidth = dblMargin
+    dblCurrentHeight = dblMaxHeight - dblMargin 
+    strFontNormal = "Times-Roman"
+    strFontBold = "Times-Bold"
+    intIndex = 0;
+    # Set Header Font
+    objCanvas.setFont(strFontBold, 20)
+    # Draw Header
+    objCanvas.drawString(dblCurrentWidth, dblCurrentHeight, strFileName)
+    
+    for intIndex in range(7):
+        # Get current day and dictionary
+        strCurrentDay = astrDays[intIndex]
+        dctMeal = adctMealList.get(strCurrentDay)
+        # Get Meal Name 
+        if isinstance(dctMeal, dict):
+            strMealName = dctMeal.get("name")
+        else:
+            strMealName = str(dctMeal)
+        
+        # Draw Data onto PDF
+        objCanvas.setFont(strFontBold, 14)
+        dblCurrentHeight -= dblNewLine
+        dblStringWidth = objCanvas.stringWidth(astrDays[intIndex], strFontBold, 14)
+        objCanvas.drawString(dblCurrentWidth, dblCurrentHeight, astrDays[intIndex])
+        objCanvas.line(dblCurrentWidth, dblCurrentHeight - 2, dblCurrentWidth + dblStringWidth, dblCurrentHeight - 2)
+        objCanvas.setFont(strFontNormal, 14)
+        objCanvas.drawRightString(450, dblCurrentHeight, "Cooking:________________________")
+        dblCurrentHeight -= dblNewLine
+        objCanvas.drawString(dblCurrentWidth, dblCurrentHeight, strMealName) 
+    objCanvas.save()
+
+    print("Meal Plan Created! Check 'Meal-Plans' folder")
+
+
+
+
+# --------------------------------------------------------------------------------
+# Name: SaveMeal
+# Abstract: Save a meal to meal.txt
+# --------------------------------------------------------------------------------
+def SaveMeal(strMeal, strFileName):
+    clsFile = open(strFileName, 'a')
+    clsFile.write(strMeal.strip() + "\n")
     clsFile.close()
 
-    clsFile = open(strMealFile, "w")
-    
 
-    for strLine in strLines:
-        if intIndex != intUserInput:
-            clsFile.write(strLine)
-        intIndex += 1
-    
+
+# --------------------------------------------------------------------------------
+# Name: LoadMeals
+# Abstract: Load meal data
+# --------------------------------------------------------------------------------
+def LoadMeals():
+    global adctMeals    
+    # Does the file not exist?
+    if not os.path.exists(strMealFile):
+        # Yes, Generate file
+        clsFile = open(strMealFile, 'a')
+        clsFile.close()
+
+    # Open file in read only mode  
+    clsFile = open(strMealFile, 'r')
+
+    #Loop through text file line by line
+    for strLine in clsFile:
+        # Trim whitespace & find split apart data
+        strLine = strLine.strip()
+        astrParts = strLine.strip().split("|")
+        # Four Entries?
+        if len(astrParts) == 4:
+           # Yes Store data into the specifed catagories
+           dctMeal = {
+                "catagory": astrParts[0],
+                "cook-type": astrParts[1],
+                "prep-time": astrParts[2],
+                "name": astrParts[3],
+           } 
+        adctMeals.append(dctMeal)
+    # Close File 
     clsFile.close()
 
 
@@ -258,7 +553,7 @@ while True:
     
     # Options
     if intUserInput == 1:
-        CreateMealPlan();
+        GenerateMealPlan();
     elif intUserInput == 2:
         AddMeals();
     elif intUserInput == 3:
